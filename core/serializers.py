@@ -22,9 +22,14 @@ class CrateSerializer(serializers.ModelSerializer):
         fields = ['crate_id', 'contents', 'delivery_batch']
         read_only_fields = ('id',)
 
+class SimpleVehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['id', 'vehicle_type', 'license_plate']
 
 class DeliveryBatchSerializer(serializers.ModelSerializer):
     crates = CrateSerializer(many=True, read_only=True)
+    vehicle = SimpleVehicleSerializer(read_only=True)
 
     class Meta:
         model = DeliveryBatch
@@ -40,10 +45,7 @@ class VehicleSerializer(serializers.ModelSerializer):
         fields = ['id', 'vehicle_type', 'license_plate', 'delivery_batches']
 
 
-class SimpleVehicleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vehicle
-        fields = ['id', 'vehicle_type', 'license_plate']
+
 
 
 class DriverSerializer(serializers.ModelSerializer):

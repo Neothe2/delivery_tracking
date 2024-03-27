@@ -1,23 +1,43 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.contrib.auth.models import  AbstractUser
+from django.contrib.auth.models import AbstractUser
+from django.db.models import F
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 
 class FleetSubscription(models.Model):
     total_slots = models.IntegerField(default=0, help_text="Total number of vehicle slots available for allocation.")
+    allocated_slots = models.IntegerField(default=0,
+                                          validators=[
+                                              MinValueValidator(0)
+                                          ], )
 
     @classmethod
     def get_instance(cls):
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
 
+    def get_total_slots(self):
+        return self.total_slots
+
+    def available_slots_left(self):
+        return self.objects.filter(pk=1, allocated_slots__lt=F('total_slots')).exists()
+
     def __str__(self):
         return f"Total slots: {self.total_slots}"
 
     class Meta:
         verbose_name_plural = "Fleet Subscriptions"
+
+
+@receiver(pre_save, sender=FleetSubscription)
+def validate_allocated_slots(sender, instance, *args, **kwargs):
+    if FleetSubscription.objects.filter(pk=1, allocated_slots__lte=F('total_slots')).exists() is not True:
+        raise ValidationError('The allocated slots are greater than the total slots :/')
+
+
 
 
 # class UserType(models.TextChoices):
@@ -61,46 +81,58 @@ def check_if_login_enabled(sender, instance, *args, **kwargs):
 class Vehicle(models.Model):
     vehicle_type = models.CharField(max_length=255)
     license_plate = models.CharField(max_length=20, unique=True)
-    vehicle_allocation = models.ForeignKey('VehicleAllocation', related_name='allocated_vehicles',
-                                           on_delete=models.SET_NULL, null=True, blank=True)
+    is_allocated = models.BooleanField(default=False)
+
+    def allocate(self):
+        if self.is_allocated is not True:
+            if FleetSubscription.get_instance().available_slots_left():
+                self.is_allocated = True
+                FleetSubscription.get_instance().allocated_slots += 1
+
+    def deallocate(self):
+        if self.is_allocated is True:
+            self.is_allocated = False
+            FleetSubscription.get_instance().allocated_slots -= 1
 
     def __str__(self):
         return f"{self.vehicle_type} - {self.license_plate}"
 
 
-class VehicleAllocation(models.Model):
-
-    @classmethod
-    def get_instance(cls):
-        # Ensure only one instance of VehicleAllocation exists
-        obj, created = cls.objects.get_or_create(pk=1)
-        return obj
-
-    def allocate_vehicle(self, vehicle: Vehicle):
-        # Ensure we don't go over the total slots available
-        if Vehicle.objects.filter(vehicle_allocation=self).count() >= FleetSubscription.get_instance().total_slots:
-            raise ValidationError("No available slots left to allocate.")
-        vehicle.vehicle_allocation = self
-        vehicle.save()
-
-    def deallocate_vehicle(self, vehicle: Vehicle):
-        if vehicle.vehicle_allocation_id == self.pk:
-            vehicle.vehicle_allocation = None
-            vehicle.save()
-
-    def save(self, *args, **kwargs):
-        # Prevent creating more than one instance
-        if not self.pk and VehicleAllocation.objects.exists():
-            raise ValidationError("There is already a VehicleAllocation instance.")
-        super(VehicleAllocation, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Vehicle Allocation - ID: {self.pk}"
+# class VehicleAllocation(models.Model):
+#
+#     @classmethod
+#     def get_instance(cls):
+#         # Ensure only one instance of VehicleAllocation exists
+#         obj, created = cls.objects.get_or_create(pk=1)
+#         return obj
+#
+#     def allocate_vehicle(self, vehicle: Vehicle):
+#         # Ensure we don't go over the total slots available
+#         if Vehicle.objects.filter(vehicle_allocation=self).count() >= FleetSubscription.get_instance().total_slots:
+#             raise ValidationError("No available slots left to allocate.")
+#         vehicle.vehicle_allocation = self
+#         vehicle.save()
+#
+#     def deallocate_vehicle(self, vehicle: Vehicle):
+#         if vehicle.vehicle_allocation_id == self.pk:
+#             vehicle.vehicle_allocation = None
+#             vehicle.save()
+#
+#     def save(self, *args, **kwargs):
+#         # Prevent creating more than one instance
+#         if not self.pk and VehicleAllocation.objects.exists():
+#             raise ValidationError("There is already a VehicleAllocation instance.")
+#         super(VehicleAllocation, self).save(*args, **kwargs)
+#
+#     def __str__(self):
+#         return f"Vehicle Allocation - ID: {self.pk}"
 
 
 class Driver(models.Model):
     name = models.CharField(max_length=255)
-    current_vehicle = models.OneToOneField(Vehicle, related_name='current_driver', on_delete=models.SET_NULL, null=True, blank=True)
+    current_vehicle = models.OneToOneField(Vehicle, related_name='current_driver', on_delete=models.SET_NULL, null=True,
+                                           blank=True)
+
     # user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='driver')
     # Add additional fields as necessary
     # ...
@@ -124,7 +156,8 @@ class DeliveryBatch(models.Model):
     # batch_id = models.CharField(max_length=50, unique=True)
     # For simplicity, let's say one delivery batch goes to one customer.
     # customer = models.ForeignKey(Customer, related_name='delivery_batches', on_delete=models.CASCADE)
-    vehicle = models.ForeignKey(Vehicle, related_name='delivery_batches', on_delete=models.SET_NULL, null=True, blank=True)
+    vehicle = models.ForeignKey(Vehicle, related_name='delivery_batches', on_delete=models.SET_NULL, null=True,
+                                blank=True)
     # ...
 
 
