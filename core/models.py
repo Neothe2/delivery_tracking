@@ -3,7 +3,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import F
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 
 
@@ -22,22 +22,28 @@ class FleetSubscription(models.Model):
     def get_total_slots(self):
         return self.total_slots
 
+    def get_allocated_slots(self):
+        return self.allocated_slots
+
     def available_slots_left(self):
-        return self.objects.filter(pk=1, allocated_slots__lt=F('total_slots')).exists()
+        return self.allocated_slots < self.total_slots
 
     def __str__(self):
         return f"Total slots: {self.total_slots}"
+
+    def save(self, *args, **kwargs):
+        if self.allocated_slots > self.total_slots:
+            raise ValidationError("The allocated slots are greater than the total slots :/")
+        return super().save(*args, **kwargs)
 
     class Meta:
         verbose_name_plural = "Fleet Subscriptions"
 
 
-@receiver(pre_save, sender=FleetSubscription)
-def validate_allocated_slots(sender, instance, *args, **kwargs):
-    if FleetSubscription.objects.filter(pk=1, allocated_slots__lte=F('total_slots')).exists() is not True:
-        raise ValidationError('The allocated slots are greater than the total slots :/')
-
-
+# @receiver(pre_save, sender=FleetSubscription)
+# def validate_allocated_slots(sender, instance, *args, **kwargs):
+#     if FleetSubscription.get_instance().allocated_slots > FleetSubscription.get_instance().total_slots:
+#         raise ValidationError('The allocated slots are greater than the total slots :/')
 
 
 # class UserType(models.TextChoices):
@@ -65,37 +71,55 @@ class User(AbstractUser):
 
 class Contact(models.Model):
     name = models.CharField(max_length=255)
-    login_enabled = models.BooleanField(default=False)
+    # login_enabled = models.BooleanField(default=False)
     user = models.OneToOneField(User, on_delete=models.SET_NULL, related_name='contact', null=True, blank=True)
 
     def __str__(self):
         return self.name
 
 
-@receiver(pre_save, sender=Contact)
-def check_if_login_enabled(sender, instance, *args, **kwargs):
-    if not instance.login_enabled:
-        instance.user = None
+# @receiver(pre_save, sender=Contact)
+# def check_if_login_enabled(sender, instance, *args, **kwargs):
+#     if not instance.login_enabled:
+#         instance.user = None
 
 
 class Vehicle(models.Model):
     vehicle_type = models.CharField(max_length=255)
     license_plate = models.CharField(max_length=20, unique=True)
     is_allocated = models.BooleanField(default=False)
+    is_loaded = models.BooleanField(default=False)
+
+    # current_driver = models.OneToOneField('Driver', on_delete=models.SET_NULL, related_name='current_vehicle',
+    #                                       null=True, blank=True)
 
     def allocate(self):
         if self.is_allocated is not True:
             if FleetSubscription.get_instance().available_slots_left():
-                self.is_allocated = True
-                FleetSubscription.get_instance().allocated_slots += 1
+                if FleetSubscription.objects.filter(pk=1).update(allocated_slots=F('allocated_slots') + 1) > 0:
+                    self.is_allocated = True
+                    self.save()  # Save Vehicle changes
+            else:
+                raise ValueError('There are no subscribed vehicles left.')
 
     def deallocate(self):
         if self.is_allocated is True:
-            self.is_allocated = False
-            FleetSubscription.get_instance().allocated_slots -= 1
+            if FleetSubscription.objects.filter(pk=1).update(allocated_slots=F('allocated_slots') - 1) > 0:
+                self.is_allocated = False
+                self.save()  # Save Vehicle changes
+            else:
+                raise ValidationError('Failed to deallocate vehicle. Consistency issue?')
 
     def __str__(self):
         return f"{self.vehicle_type} - {self.license_plate}"
+
+
+@receiver(post_delete, sender=Vehicle)
+def decrement_allocated_slots(sender, instance, **kwargs):
+    if instance.is_allocated:
+        fleet_subscription = FleetSubscription.get_instance()
+        fleet_subscription.allocated_slots -= 1
+        fleet_subscription.save()
 
 
 # class VehicleAllocation(models.Model):
@@ -129,16 +153,17 @@ class Vehicle(models.Model):
 
 
 class Driver(models.Model):
-    name = models.CharField(max_length=255)
-    current_vehicle = models.OneToOneField(Vehicle, related_name='current_driver', on_delete=models.SET_NULL, null=True,
-                                           blank=True)
+    # name = models.CharField(max_length=255)
+    current_vehicle = models.OneToOneField(Vehicle, related_name='current_driver', on_delete=models.SET_NULL,
+                                           null=True, blank=True)
+    contact = models.OneToOneField(Contact, related_name='driver', on_delete=models.CASCADE)
 
     # user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='driver')
     # Add additional fields as necessary
     # ...
 
     def __str__(self):
-        return self.name
+        return self.contact.name
 
 
 class Customer(models.Model):
@@ -155,9 +180,10 @@ class Customer(models.Model):
 class DeliveryBatch(models.Model):
     # batch_id = models.CharField(max_length=50, unique=True)
     # For simplicity, let's say one delivery batch goes to one customer.
-    # customer = models.ForeignKey(Customer, related_name='delivery_batches', on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, related_name='delivery_batches', on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, related_name='delivery_batches', on_delete=models.SET_NULL, null=True,
                                 blank=True)
+    delivery_address = models.TextField()
     # ...
 
 
@@ -171,7 +197,7 @@ class DeliveryBatch(models.Model):
 # Assuming that a Crate is part of your system
 class Crate(models.Model):
     crate_id = models.CharField(max_length=50, unique=True, primary_key=True)
-    contents = models.TextField()
+    # contents = models.TextField()
     # This is a simple ForeignKey relationship. For real-world scenarios, consider using a ManyToManyField if crates can be part of multiple batches.
     delivery_batch = models.ForeignKey('DeliveryBatch', related_name='crates', on_delete=models.SET_NULL, null=True,
                                        blank=True)
