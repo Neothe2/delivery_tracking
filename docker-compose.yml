@@ -28,7 +28,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   nginx:
-    image: nginx:1.25.5-alpine3.19
+    image: nginx:1.24.0-alpine3.17-slim
     ports:
       - "80:80"
     volumes:
