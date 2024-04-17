@@ -12,7 +12,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'contact_details']
+        fields = ['id', 'name', 'phone_number']
         read_only_fields = ('id',)
 
 

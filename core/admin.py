@@ -44,6 +44,19 @@ class DeliveryBatchAdmin(admin.ModelAdmin):
 
 
 class CustomUserAdmin(UserAdmin):
+    add_fieldsets = (
+        (None, {'fields': ('username', 'password1', 'password2')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'groups')}),  # Include 'groups' field
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'groups')}),  # Include 'groups' field
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if not (request.user.groups.filter(name='pierr_admin').exists() or request.user.is_superuser):
@@ -63,17 +76,7 @@ class CustomUserAdmin(UserAdmin):
                 form.base_fields['groups'].queryset = Group.objects.exclude(name='pierr_admin')
         return form
 
-    def get_fieldsets(self, request, obj=None):
-        if request.user.groups.filter(name='pierr_admin').exists() or request.user.is_superuser:
-            fieldsets = super().get_fieldsets(request, obj)  # Use default fieldsets
-        else:
-            fieldsets = (
-                (None, {'fields': ('username', 'password')}),
-                ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
-                ('Permissions', {'fields': ('is_active', 'is_staff', 'groups')}),  # Include 'groups' field
-                ('Important dates', {'fields': ('last_login', 'date_joined')}),
-            )
-        return fieldsets
+
 
 
 class CustomVehicleAdmin(admin.ModelAdmin):

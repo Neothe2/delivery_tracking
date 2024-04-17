@@ -168,7 +168,7 @@ class Driver(models.Model):
 
 class Customer(models.Model):
     name = models.CharField(max_length=255)
-    contact_details = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=255)
 
     # Additional fields like address, preferences can be added later
     # ...
