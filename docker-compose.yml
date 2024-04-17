@@ -19,7 +19,7 @@ services:
       - POSTGRES_PORT=5432
 
   db:
-    image: postgres:latest
+    image: postgres:16.2-alpine3.19
     environment:
       - POSTGRES_DB=delivery_tracking_db
       - POSTGRES_USER=admin
@@ -28,7 +28,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.25.5-alpine3.19
     ports:
       - "80:80"
     volumes:
