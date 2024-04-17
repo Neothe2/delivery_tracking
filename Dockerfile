@@ -1,5 +1,5 @@
 FROM postgres:16.2-alpine3.19 AS builder
-RUN apt-get update && apt-get install -y postgresql-client
+RUN apk update && apk add postgresql-client
 # Extract pg_config to a known location
 RUN cp /usr/lib/postgresql/16/bin/pg_config /pg_config
 
