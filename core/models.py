@@ -177,13 +177,21 @@ class Customer(models.Model):
         return self.name
 
 
+class Address(models.Model):
+    value = models.TextField()
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='addresses')
+
+    def __str__(self):
+        return self.value
+
+
 class DeliveryBatch(models.Model):
     # batch_id = models.CharField(max_length=50, unique=True)
     # For simplicity, let's say one delivery batch goes to one customer.
     customer = models.ForeignKey(Customer, related_name='delivery_batches', on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, related_name='delivery_batches', on_delete=models.SET_NULL, null=True,
                                 blank=True)
-    delivery_address = models.TextField()
+    delivery_address = models.OneToOneField(Address, on_delete=models.CASCADE)
     # ...
 
 

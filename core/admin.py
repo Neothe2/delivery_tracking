@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 
 from .models import Vehicle, Driver, Customer, Crate, DeliveryBatch, \
-    FleetSubscription, User, Contact
+    FleetSubscription, User, Contact, Address
 
 
 # class CustomUserAdmin(UserAdmin):
@@ -38,6 +38,14 @@ class CrateInline(admin.TabularInline):  # or admin.StackedInline for a differen
 class DeliveryBatchAdmin(admin.ModelAdmin):
     # ... other customizations ...
     inlines = [CrateInline]
+
+class AddressInline(admin.TabularInline):
+    model = Address
+    extra = 1
+
+
+class CustomerAdmin(admin.ModelAdmin):
+    inlines = [AddressInline]
 
 
 
@@ -103,7 +111,7 @@ class CustomVehicleAdmin(admin.ModelAdmin):
 
 admin.site.register(Vehicle, CustomVehicleAdmin)
 admin.site.register(Driver)
-admin.site.register(Customer)
+admin.site.register(Customer, CustomerAdmin)
 admin.site.register(Crate)
 admin.site.register(DeliveryBatch, DeliveryBatchAdmin)
 admin.site.register(User, CustomUserAdmin)

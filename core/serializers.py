@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
-from .models import Crate, DeliveryBatch, Customer, Driver, Vehicle, User, Contact
+from .models import Crate, DeliveryBatch, Customer, Driver, Vehicle, User, Contact, Address
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -9,10 +9,19 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'value']
+        read_only_fields = ('id',)
+
+
 class CustomerSerializer(serializers.ModelSerializer):
+    addresses = AddressSerializer(many=True, read_only=True)
+
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'phone_number']
+        fields = ['id', 'name', 'phone_number', 'addresses']
         read_only_fields = ('id',)
 
 
@@ -46,6 +55,7 @@ class DeliveryBatchSerializer(serializers.ModelSerializer):
     crates = CrateSerializer(many=True, read_only=True)
     vehicle = SimpleVehicleSerializer(read_only=True)
     customer = CustomerSerializer(read_only=True)
+    delivery_address = AddressSerializer(read_only=True)
 
     class Meta:
         model = DeliveryBatch
