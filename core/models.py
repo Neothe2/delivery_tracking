@@ -191,7 +191,7 @@ class DeliveryBatch(models.Model):
     customer = models.ForeignKey(Customer, related_name='delivery_batches', on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, related_name='delivery_batches', on_delete=models.SET_NULL, null=True,
                                 blank=True)
-    delivery_address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    delivery_address = models.OneToOneField(Address, on_delete=models.CASCADE)
     # ...
 
 
