@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError
 from django.http import JsonResponse, HttpResponse
 from djoser.views import UserViewSet
 from rest_framework import status, viewsets
@@ -21,6 +22,27 @@ class CrateViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False)
+    def add_multiple_crates(self, request):
+        data = request.data
+        crate_ids = data.get('crateIds', [])  # Get the list of crate IDs
+
+        created_crates = []
+        errors = []
+
+        for crate_id in crate_ids:
+            try:
+                crate = Crate.objects.create(crate_id=crate_id)
+                created_crates.append(crate)
+            except IntegrityError:  # Handle duplicate crate ID
+                errors.append(f'Crate ID "{crate_id}" already exists.')
+
+        if errors:
+            return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CrateSerializer(created_crates, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class DeliveryBatchViewSet(viewsets.ModelViewSet):
