@@ -192,7 +192,19 @@ class DeliveryBatch(models.Model):
     vehicle = models.ForeignKey(Vehicle, related_name='delivery_batches', on_delete=models.SET_NULL, null=True,
                                 blank=True)
     delivery_address = models.OneToOneField(Address, on_delete=models.CASCADE)
+    delivered = models.BooleanField(default=False)
     # ...
+
+
+class ProofOfDelivery(models.Model):
+    delivery_batch = models.OneToOneField(  # OneToOneField enforces one-to-one relationship
+        'DeliveryBatch', related_name='proof_of_delivery', on_delete=models.CASCADE)
+    signature_image = models.ImageField(upload_to='proof_of_delivery/', blank=True)  # Optional customer signature
+    image = models.ImageField(upload_to='proof_of_delivery/')  # Mandatory image of delivered items
+    notes = models.TextField(blank=True)  # Optional driver's notes
+
+    def __str__(self):
+        return f"Proof of Delivery for Batch: {self.delivery_batch.id}"
 
 
 # class Order(models.Model):
