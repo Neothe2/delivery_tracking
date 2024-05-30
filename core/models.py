@@ -197,8 +197,7 @@ class DeliveryBatch(models.Model):
 
 
 class ProofOfDelivery(models.Model):
-    delivery_batch = models.OneToOneField(  # OneToOneField enforces one-to-one relationship
-        'DeliveryBatch', related_name='proof_of_delivery', on_delete=models.CASCADE)
+
     signature_image = models.ImageField(upload_to='proof_of_delivery/', blank=True)  # Optional customer signature
     image = models.ImageField(upload_to='proof_of_delivery/')  # Mandatory image of delivered items
     notes = models.TextField(blank=True)  # Optional driver's notes
@@ -226,5 +225,15 @@ class Crate(models.Model):
 
     def __str__(self):
         return f'Crate #{self.crate_id}'
+
+
+class Delivery(models.Model):
+    proof_of_delivery = models.OneToOneField(ProofOfDelivery, on_delete=models.PROTECT, related_name='delivery')
+    crates = models.ManyToManyField(Crate, related_name='deliveries')
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT, related_name='deliveries')
+    driver = models.ForeignKey(Driver, on_delete=models.PROTECT, related_name='deliveries')
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='deliveries')
+    time_of_delivery = models.TimeField(auto_now_add=True)
+    date_of_delivery = models.DateField(auto_now_add=True)
 
 # Additional models for managing user accounts, subscriptions, and other data might be necessary as the system grows.
