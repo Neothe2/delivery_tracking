@@ -233,6 +233,7 @@ class Delivery(models.Model):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT, related_name='deliveries')
     driver = models.ForeignKey(Driver, on_delete=models.PROTECT, related_name='deliveries')
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='deliveries')
+    address = models.ForeignKey(Address, on_delete=models.PROTECT, related_name='deliveries')
     time_of_delivery = models.TimeField(auto_now_add=True)
     date_of_delivery = models.DateField(auto_now_add=True)
 

@@ -161,7 +161,16 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     @action(methods=['PATCH', 'PUT'], detail=True)
     def unload_delivery_batch(self, request, pk):
+        # Get delivery batch id
         delivery_batch_id = request.data.get('id')
+        # Get note
+        proof_of_delivery_note = request.data.get('note')
+        # Get signature
+        proof_of_delivery_signature = request.data.get('signature')
+        # Get Image
+
+
+
         if delivery_batch_id is None:
             return Response({"error": 'There is no delivery batch id supplied in the request.'},
                             status=status.HTTP_400_BAD_REQUEST)
