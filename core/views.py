@@ -189,7 +189,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_404_NOT_FOUND)
 
         # Delete the delivery batch
-        # delivery_batch.delete()
+        delivery_batch.delete()
 
 
 
