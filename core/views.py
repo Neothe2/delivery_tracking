@@ -166,10 +166,15 @@ class VehicleViewSet(viewsets.ModelViewSet):
         # Get note
         proof_of_delivery_note = request.data.get('note')
         # Get signature
-        proof_of_delivery_signature = request.data.get('signature')
+        proof_of_delivery_signature = request.FILES.get('proof_of_delivery_signature')
         # Get Image
+        proof_of_delivery_image = request.FILES['proof_of_delivery_image']
 
-
+        print(proof_of_delivery_signature)
+        print(proof_of_delivery_image)
+        print(proof_of_delivery_note)
+        print(delivery_batch_id)
+        print('The method is being called')
 
         if delivery_batch_id is None:
             return Response({"error": 'There is no delivery batch id supplied in the request.'},
@@ -184,7 +189,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_404_NOT_FOUND)
 
         # Delete the delivery batch
-        delivery_batch.delete()
+        # delivery_batch.delete()
 
 
 
