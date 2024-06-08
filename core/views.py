@@ -163,18 +163,18 @@ class VehicleViewSet(viewsets.ModelViewSet):
     def unload_delivery_batch(self, request, pk):
         # Get delivery batch id
         delivery_batch_id = request.data.get('id')
-        # Get note
-        proof_of_delivery_note = request.data.get('note')
-        # Get signature
-        proof_of_delivery_signature = request.FILES.get('proof_of_delivery_signature')
-        # Get Image
-        proof_of_delivery_image = request.FILES['proof_of_delivery_image']
+        # # Get note
+        # proof_of_delivery_note = request.data.get('note')
+        # # Get signature
+        # proof_of_delivery_signature = request.FILES.get('proof_of_delivery_signature')
+        # # Get Image
+        # proof_of_delivery_image = request.FILES['proof_of_delivery_image']
 
-        print(proof_of_delivery_signature)
-        print(proof_of_delivery_image)
-        print(proof_of_delivery_note)
-        print(delivery_batch_id)
-        print('The method is being called')
+        # print(proof_of_delivery_signature)
+        # print(proof_of_delivery_image)
+        # print(proof_of_delivery_note)
+        # print(delivery_batch_id)
+        # print('The method is being called')
 
         if delivery_batch_id is None:
             return Response({"error": 'There is no delivery batch id supplied in the request.'},
@@ -190,8 +190,6 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
         # Delete the delivery batch
         delivery_batch.delete()
-
-
 
         # Vehicle save is not required after delete (commented out)
         # vehicle.save()
