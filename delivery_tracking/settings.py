@@ -156,6 +156,5 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
-CSRF_TRUSTED_ORIGINS = [
-'http://108.181.201.104/',
-]
+#TODO: might be a problem later
+CSRF_COOKIE_SECURE = False
